@@ -47,6 +47,8 @@ pipx install brother_ql
 ```
 If needed, add ~/.local/bin to your PATH
 
+---
+
 ## 4. Generate a Label Image (29x90 mm pre-cut)
 Example Python script using Pillow:
 
