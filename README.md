@@ -70,7 +70,7 @@ bw = image.convert('1')  # 1-bit black & white
 bw.save("label.png")
 ```
 
-## Print the label
+## 5. Print the label
 ```bash
 brother_ql --backend pyusb \
   --model QL-800 \
