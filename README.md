@@ -93,7 +93,7 @@ python3 print.py 'title' 10 2897495907703 'your footer'
 - "title" is a string
 - 10 is the Price in €
 - 2897495907703 is your barcode
-- "your footer" is a string (optionnal)
+- "your footer" is a string (optional)
 
 The label type you're using is *DK-2205*:
 
