@@ -94,3 +94,9 @@ python3 print.py 'title' 10 2897495907703 'your footer'
 - 10 is the Price in €
 - 2897495907703 is your barcode
 - "your footer" is a string (optionnal)
+
+The label type you're using is *DK-2205*:
+
+Format: 62mm wide, continuous (endless)
+Color: White with black printing only
+Type: Continuous labels without pre-cuts
