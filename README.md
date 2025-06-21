@@ -37,7 +37,9 @@ sudo udevadm trigger
 
 Unplug and replug the printer.
 
-## Install brother_ql via pipx
+---
+
+## 3. Install brother_ql via pipx
 
 ```bash
 sudo apt install pipx
@@ -69,6 +71,8 @@ draw.text((x, y), text, fill='black', font=font)
 bw = image.convert('1')  # 1-bit black & white
 bw.save("label.png")
 ```
+
+---
 
 ## 5. Print the label
 ```bash
