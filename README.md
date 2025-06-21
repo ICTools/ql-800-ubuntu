@@ -56,7 +56,6 @@ Example Python script using Pillow:
 ```py
 from PIL import Image, ImageDraw, ImageFont
 
-# 29x90 mm at 267 DPI → ~306x945 px
 width, height = 306, 991  # 29x90 mm @ 300 dpi
 image = Image.new('RGB', (width, height), color='white')
 
