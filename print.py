@@ -3,6 +3,7 @@ import subprocess
 from PIL import Image, ImageDraw, ImageFont
 import random
 import sys
+import string
 
 def calculate_ean13_checksum(code_12_digits):
     total = 0
@@ -20,7 +21,140 @@ def generate_internal_ean13():
     checksum = calculate_ean13_checksum(code_12)
     return code_12 + checksum
 
+def generate_internal_code128():
+    """Génère un code-barres Code 128 aléatoire avec des lettres et chiffres"""
+    chars = string.ascii_uppercase + string.digits
+    return "INT" + "".join(random.choices(chars, k=8))
+
+def get_code128_patterns():
+    """Retourne les patterns Code 128"""
+    patterns = {
+        # Code Set A (caractères de contrôle, chiffres, lettres majuscules)
+        'A': {
+            ' ': '11011001100', '!': '11001101100', '"': '11001100110', '#': '10010011000',
+            '$': '10010001100', '%': '10001001100', '&': '10011001000', "'": '10011000100',
+            '(': '10001100100', ')': '11001001000', '*': '11001000100', '+': '11000100100',
+            ',': '10110011100', '-': '10011011100', '.': '10011001110', '/': '10111001100',
+            '0': '10011101100', '1': '10011100110', '2': '11001110010', '3': '11001011100',
+            '4': '11001001110', '5': '11011100100', '6': '11001110100', '7': '11101101110',
+            '8': '11101001100', '9': '11100101100', ':': '11100100110', ';': '11101100100',
+            '<': '11100110100', '=': '11100110010', '>': '11011011000', '?': '11011000110',
+            '@': '11000110110', 'A': '10100011000', 'B': '10001011000', 'C': '10001000110',
+            'D': '10110001000', 'E': '10001101000', 'F': '10001100010', 'G': '11010001000',
+            'H': '11000101000', 'I': '11000100010', 'J': '10110111000', 'K': '10110001110',
+            'L': '10001101110', 'M': '10111011000', 'N': '10111000110', 'O': '10001110110',
+            'P': '11101110110', 'Q': '11010001110', 'R': '11000101110', 'S': '11011101000',
+            'T': '11011100010', 'U': '11011101110', 'V': '11101011000', 'W': '11101000110',
+            'X': '11100010110', 'Y': '11101101000', 'Z': '11101100010'
+        }
+    }
+    
+    # Codes spéciaux
+    start_a = '11010000100'
+    start_b = '11010010000'
+    start_c = '11010011100'
+    stop = '1100011101011'
+    
+    return patterns, start_a, start_b, start_c, stop
+
+def calculate_code128_checksum(data, start_code):
+    """Calcule le checksum pour Code 128"""
+    # Valeurs des caractères pour le checksum
+    char_values = {}
+    
+    # Valeurs pour les caractères ASCII imprimables
+    for i in range(32, 127):
+        char_values[chr(i)] = i - 32
+    
+    # Start codes
+    start_values = {'A': 103, 'B': 104, 'C': 105}
+    
+    checksum = start_values[start_code]
+    
+    for i, char in enumerate(data):
+        if char in char_values:
+            checksum += char_values[char] * (i + 1)
+    
+    return checksum % 103
+
+def get_checksum_pattern(checksum_value):
+    """Retourne le pattern pour la valeur de checksum"""
+    patterns = [
+        '11011001100', '11001101100', '11001100110', '10010011000', '10010001100',
+        '10001001100', '10011001000', '10011000100', '10001100100', '11001001000',
+        '11001000100', '11000100100', '10110011100', '10011011100', '10011001110',
+        '10111001100', '10011101100', '10011100110', '11001110010', '11001011100',
+        '11001001110', '11011100100', '11001110100', '11101101110', '11101001100',
+        '11100101100', '11100100110', '11101100100', '11100110100', '11100110010',
+        '11011011000', '11011000110', '11000110110', '10100011000', '10001011000',
+        '10001000110', '10110001000', '10001101000', '10001100010', '11010001000',
+        '11000101000', '11000100010', '10110111000', '10110001110', '10001101110',
+        '10111011000', '10111000110', '10001110110', '11101110110', '11010001110',
+        '11000101110', '11011101000', '11011100010', '11011101110', '11101011000',
+        '11101000110', '11100010110', '11101101000', '11101100010', '11100011010',
+        '11101111010', '11001000010', '11110001010', '10100110000', '10100001100',
+        '10010110000', '10010000110', '10000101100', '10000100110', '10110010000',
+        '10110000100', '10011010000', '10011000010', '10000110100', '10000110010',
+        '11000010010', '11001010000', '11110111010', '11000010100', '10001111010',
+        '10100111100', '10010111100', '10010011110', '10111100100', '10011110100',
+        '10011110010', '11110100100', '11110010100', '11110010010', '11011011110',
+        '11011110110', '11110110110', '10101111000', '10100011110', '10001011110',
+        '10111101000', '10111100010', '11110101000', '11110100010', '10111011110',
+        '10111101110', '11101011110', '11110101110', '11010000100', '11010010000',
+        '11010011100', '1100011101011'
+    ]
+    
+    if 0 <= checksum_value < len(patterns):
+        return patterns[checksum_value]
+    return patterns[0]
+
+def draw_code128_barcode(draw, x, y, width, height, data, module_width):
+    """Dessine un code-barres Code 128"""
+    patterns, start_a, start_b, start_c, stop = get_code128_patterns()
+    
+    # Utilise le Code Set A pour supporter les lettres majuscules et chiffres
+    current_x = x
+    
+    # Start code A
+    for bit in start_a:
+        if bit == '1':
+            draw.rectangle([current_x, y, current_x + module_width, y + height], fill='black')
+        current_x += module_width
+    
+    # Données
+    for char in data:
+        if char in patterns['A']:
+            pattern = patterns['A'][char]
+            for bit in pattern:
+                if bit == '1':
+                    draw.rectangle([current_x, y, current_x + module_width, y + height], fill='black')
+                current_x += module_width
+        else:
+            # Si le caractère n'est pas supporté, le remplacer par un espace
+            pattern = patterns['A'][' ']
+            for bit in pattern:
+                if bit == '1':
+                    draw.rectangle([current_x, y, current_x + module_width, y + height], fill='black')
+                current_x += module_width
+    
+    # Checksum
+    checksum_value = calculate_code128_checksum(data, 'A')
+    checksum_pattern = get_checksum_pattern(checksum_value)
+    for bit in checksum_pattern:
+        if bit == '1':
+            draw.rectangle([current_x, y, current_x + module_width, y + height], fill='black')
+        current_x += module_width
+    
+    # Stop code
+    for bit in stop:
+        if bit == '1':
+            draw.rectangle([current_x, y, current_x + module_width, y + height], fill='black')
+        current_x += module_width
+    
+    return True
+
 def draw_ean13_barcode(draw, x, y, width, height, ean13_code, module_width):
+    """Dessine un code-barres EAN-13 (code original conservé)"""
     patterns = {
         'A': {
             '0': '0001101', '1': '0011001', '2': '0010011', '3': '0111101',
@@ -89,23 +223,43 @@ def draw_ean13_barcode(draw, x, y, width, height, ean13_code, module_width):
     
     return True
 
-def format_ean13_display(ean13_code):
-    if len(ean13_code) == 13:
-        return f"{ean13_code[0]} {ean13_code[1:7]} {ean13_code[7:13]}"
-    return ean13_code
+def is_numeric(barcode):
+    """Vérifie si le code-barres ne contient que des chiffres"""
+    return barcode.isdigit()
+
+def format_barcode_display(barcode_code, is_ean13=False):
+    """Formate l'affichage du code-barres"""
+    if is_ean13 and len(barcode_code) == 13:
+        return f"{barcode_code[0]} {barcode_code[1:7]} {barcode_code[7:13]}"
+    return barcode_code
 
 def create_price_label(product_name, price_euros, barcode_number, footer="", height=300):
     width = 696
     
+    # Détermine le type de code-barres à générer
+    use_ean13 = False
+    
     if barcode_number is None or barcode_number == "":
-        ean13_code = generate_internal_ean13()
+        # Génère un code aléatoire basé sur le type demandé
+        barcode_code = generate_internal_code128()
+        use_ean13 = False
     else:
-        if len(barcode_number) == 12:
-            ean13_code = barcode_number + calculate_ean13_checksum(barcode_number)
-        elif len(barcode_number) == 13:
-            ean13_code = barcode_number
+        if is_numeric(barcode_number):
+            # Code numérique - utilise EAN-13 si possible
+            if len(barcode_number) == 12:
+                barcode_code = barcode_number + calculate_ean13_checksum(barcode_number)
+                use_ean13 = True
+            elif len(barcode_number) == 13:
+                barcode_code = barcode_number
+                use_ean13 = True
+            else:
+                # Code numérique mais pas de la bonne longueur pour EAN-13
+                barcode_code = barcode_number
+                use_ean13 = False
         else:
-            raise ValueError(f"Invalid EAN-13 code: {barcode_number}. Must be 12 or 13 digits.")
+            # Code alphanumérique - utilise Code 128
+            barcode_code = barcode_number.upper()  # Convertit en majuscules
+            use_ean13 = False
     
     image = Image.new('RGB', (width, height), color='white')
     draw = ImageDraw.Draw(image)
@@ -126,6 +280,7 @@ def create_price_label(product_name, price_euros, barcode_number, footer="", hei
     margin = 12
     current_y = margin
     
+    # Traitement du nom du produit
     max_chars_per_line = 32
     lines = []
     
@@ -159,26 +314,37 @@ def create_price_label(product_name, price_euros, barcode_number, footer="", hei
     
     current_y += 15
     
+    # Dessin du code-barres
     barcode_height = 100
-    module_width = 5
-    actual_barcode_width = 113 * module_width
-    base_center = (width - actual_barcode_width) // 2
-    barcode_x = base_center + 35
+    module_width = 3 if not use_ean13 else 5
     
-    success = draw_ean13_barcode(draw, barcode_x, current_y, actual_barcode_width, barcode_height, ean13_code, module_width)
+    if use_ean13:
+        # Code-barres EAN-13
+        actual_barcode_width = 113 * module_width
+        base_center = (width - actual_barcode_width) // 2
+        barcode_x = base_center + 35
+        success = draw_ean13_barcode(draw, barcode_x, current_y, actual_barcode_width, barcode_height, barcode_code, module_width)
+    else:
+        # Code-barres Code 128
+        # Estimation de la largeur (11 bits par caractère + start + checksum + stop)
+        estimated_width = (len(barcode_code) + 3) * 11 * module_width
+        barcode_x = (width - estimated_width) // 2
+        success = draw_code128_barcode(draw, barcode_x, current_y, estimated_width, barcode_height, barcode_code, module_width)
     
     if not success:
-        draw.text((barcode_x, current_y), f"EAN: {ean13_code}", fill='black', font=font_small)
+        draw.text((barcode_x, current_y), f"Code: {barcode_code}", fill='black', font=font_small)
     
     current_y += barcode_height + 5
     
-    formatted_ean = format_ean13_display(ean13_code)
-    bbox = draw.textbbox((0, 0), formatted_ean, font=font_small)
+    # Affichage du code-barres
+    formatted_barcode = format_barcode_display(barcode_code, use_ean13)
+    bbox = draw.textbbox((0, 0), formatted_barcode, font=font_small)
     text_width = bbox[2] - bbox[0]
     x_centered = (width - text_width) // 2
-    draw.text((x_centered, current_y), formatted_ean, fill='black', font=font_small)
+    draw.text((x_centered, current_y), formatted_barcode, fill='black', font=font_small)
     current_y += 30
     
+    # Prix
     price_text = f"{price_euros:.2f} €"
     bbox = draw.textbbox((0, 0), price_text, font=font_price)
     text_width = bbox[2] - bbox[0]
@@ -186,19 +352,23 @@ def create_price_label(product_name, price_euros, barcode_number, footer="", hei
     draw.text((x_centered, current_y), price_text, fill='black', font=font_price)
     current_y += 50
     
+    # Pied de page
     if footer and footer.strip():
         bbox = draw.textbbox((0, 0), footer, font=font_website)
         text_width = bbox[2] - bbox[0]
         x_centered = (width - text_width) // 2
         draw.text((x_centered, current_y), footer, fill='black', font=font_website)
     
+    # Bordure
     draw.rectangle([2, 2, width-2, height-2], outline='black', width=1)
     
+    # Sauvegarde
     bw = image.convert('1')
-    filename = f"etiquette_{ean13_code}.png"
+    safe_barcode = "".join(c for c in barcode_code if c.isalnum())
+    filename = f"etiquette_{safe_barcode}.png"
     bw.save(filename)
     
-    return filename, ean13_code
+    return filename, barcode_code
 
 def print_label(filename):
     cmd = [
@@ -219,7 +389,9 @@ def main():
     try:
         if len(sys.argv) < 4:
             print("Usage: python3 etiquettes.py <title> <price> <barcode> [footer]", file=sys.stderr)
-            print("Example: python3 etiquettes.py 'Python Book' 29.90 210012345 'www.site.com'", file=sys.stderr)
+            print("Exemples:", file=sys.stderr)
+            print("  python3 etiquettes.py 'Python Book' 29.90 210012345 'www.site.com'  # EAN-13", file=sys.stderr)
+            print("  python3 etiquettes.py 'Special Item' 15.50 'ABC123DEF' 'www.site.com'  # Code 128", file=sys.stderr)
             sys.exit(1)
         
         title = sys.argv[1]
@@ -233,11 +405,15 @@ def main():
         barcode = sys.argv[3]
         footer = sys.argv[4] if len(sys.argv) > 4 else ""
         
-        if barcode and not barcode.isdigit():
-            print("Error: Barcode must contain only digits", file=sys.stderr)
+        # Validation moins restrictive - accepte maintenant les caractères alphanumériques
+        if barcode and not all(c.isalnum() for c in barcode):
+            print("Error: Barcode must contain only letters and digits", file=sys.stderr)
             sys.exit(1)
         
-        filename, ean13_code = create_price_label(title, price, barcode, footer)
+        filename, barcode_code = create_price_label(title, price, barcode, footer)
+        
+        barcode_type = "EAN-13" if is_numeric(barcode_code) and len(barcode_code) == 13 else "Code 128"
+        print(f"Generated {barcode_type} barcode: {barcode_code}")
         
         success, message = print_label(filename)
         
