@@ -56,7 +56,6 @@ Example Python script using Pillow:
 ```py
 from PIL import Image, ImageDraw, ImageFont
 
-# 29x90 mm at 267 DPI → ~306x945 px
 width, height = 306, 991  # 29x90 mm @ 300 dpi
 image = Image.new('RGB', (width, height), color='white')
 
@@ -93,4 +92,10 @@ python3 print.py 'title' 10 2897495907703 'your footer'
 - "title" is a string
 - 10 is the Price in €
 - 2897495907703 is your barcode
-- "your footer" is a string (optionnal)
+- "your footer" is a string (optional)
+
+The label type you're using is *DK-2205*:
+
+- Format: 62mm wide, continuous (endless)
+- Color: White with black printing only
+- Type: Continuous labels without pre-cuts
